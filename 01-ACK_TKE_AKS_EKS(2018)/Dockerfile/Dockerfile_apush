@@ -1,0 +1,16 @@
+FROM  centos
+MAINTAINER QMJQ 20190926 http://qmjq.github.io
+
+RUN mkdir -p /data/apush/server  && mkdir -p /data/apush/lib
+RUN rm -rf /etc/localtime ;ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+COPY c_k8s/apush/server /data/apush/server
+COPY c_k8s/lib /data/apush/lib
+
+WORKDIR /data/apush/server
+
+#VOLUME  /root/apush
+
+EXPOSE 2200
+
+#ENTRYPOINT ["./apush_server",">","/dev/null",">&1","&"]
+CMD ["./apush_server",">","/dev/null",">&1","&"]

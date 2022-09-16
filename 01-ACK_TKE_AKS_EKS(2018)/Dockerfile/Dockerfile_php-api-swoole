@@ -1,0 +1,19 @@
+FROM  centos
+MAINTAINER QMJQ 20190926 http://qmjq.github.io
+
+RUN mkdir -p /data/morseapp-api-swoole 
+RUN rm -rf /etc/localtime ;ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+COPY php_k8s/morseapp-api-swoole /data/morseapp-api-swoole
+RUN yum -y install libxslt libpng-devel libjpeg libXpm geoip freetype ; ln -s -f /mnt/azure/php  /data/php ; ln -s -f /mnt/azure/morseapp-api-swoole/config  /data/morseapp-api-swoole/config
+ENV PHP /data/php/bin
+ENV PATH $PATH:$PHP
+
+WORKDIR /data/morseapp-api-swoole
+
+#VOLUME  /root/cm 
+
+EXPOSE 9559
+
+#ENTRYPOINT ["./cm_server",">","/dev/null",">&1","&"]
+#CMD ["php","think","swoole","start",">","/dev/null",">&1","&"]
+CMD  php think swoole start  && tailf /etc/hosts

@@ -1,0 +1,16 @@
+FROM  centos
+MAINTAINER QMJQ 20190926 http://qmjq.github.io
+
+RUN mkdir -p /data/login/server  && mkdir -p /data/login/lib
+RUN rm -rf /etc/localtime ;ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+COPY c_k8s/login/server /data/login/server
+COPY c_k8s/lib /data/login/lib
+
+WORKDIR /data/login/server
+
+#VOLUME  /root/login 
+
+EXPOSE 3200
+
+#ENTRYPOINT ["./login_server",">","/dev/null",">&1","&"]
+CMD ["./login_server",">","/dev/null",">&1","&"]

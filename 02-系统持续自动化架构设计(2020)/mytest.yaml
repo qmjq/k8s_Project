@@ -1,0 +1,77 @@
+---
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"mytest-deploy","namespace":"default"},"spec":{"selector":{"matchLabels":{"app":"mytest-nginx"}},"template":{"metadata":{"labels":{"app":"mytest-nginx"}},"spec":{"containers":[{"image":"nginx:1.23.0","name":"mytest-nginx","ports":[{"containerPort":80}],"resources":{"limits":{"cpu":"500m","memory":"128Mi"},"requests":{"cpu":"250m","memory":"64Mi"}}}],"restartPolicy":"Always"}}}}
+    name: mytest-nginx
+    namespace: default
+  spec:
+    replicas: 2
+    selector:
+      matchLabels:
+        app: mytest-nginx
+    template:
+      metadata:
+        labels:
+          app: mytest-nginx
+      spec:
+        containers:
+        - image: nginx:1.23.0
+          name: mytest-nginx
+          ports:
+          - containerPort: 80
+          resources:
+            limits:
+              cpu: 500m
+              memory: 128Mi
+            requests:
+              cpu: 250m
+              memory: 64Mi
+        restartPolicy: Always
+---
+  apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"name":"mytest-service","namespace":"default"},"spec":{"ports":[{"nodePort":30001,"port":80,"protocol":"TCP","targetPort":80}],"selector":{"app":"mytest-nginx"},"type":"NodePort"}}
+    name: mytest-service
+    namespace: default
+  spec:
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+      nodePort: 30001
+    selector:
+      app: mytest-nginx
+    type: NodePort
+---
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","kind":"Pod","metadata":{"annotations":{},"name":"mytest-centos","namespace":"default"},"spec":{"containers":[{"command":["tail","-f /etc/sysconfig/kernel"],"image":"centos:centos7.9.2009","imagePullPolicy":"IfNotPresent","name":"mytest-centos","resources":{"limits":{"cpu":"500m","memory":"256Mi"},"requests":{"cpu":"250m","memory":"128Mi"}}}],"restartPolicy":"Always"}}
+    name: mytest-centos
+    namespace: default
+  spec:
+    containers:
+    - command:
+      - "/usr/bin/tail"
+      - -f 
+      - "/etc/hosts"
+      image: centos:centos7.9.2009
+      imagePullPolicy: IfNotPresent
+      name: mytest-centos
+      resources:
+        limits:
+          cpu: 500m
+          memory: 256Mi
+        requests:
+          cpu: 250m
+          memory: 128Mi
+    restartPolicy: Always
+

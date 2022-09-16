@@ -1,0 +1,621 @@
+##yml
+##git:https://github.com/QMJQ
+##blog:http://qmjq.github.io 
+##     http://qiaomiao.blog.51cto.com
+##date: 20190926 v1.0
+##author:QMJQ
+##description: k8s's cluster yml
+#
+ 
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cm
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5 
+  template:
+    metadata:
+      labels:
+        app: cm
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      imagePullSecrets:
+      - name: prek8s
+      containers:
+      - name: cm
+        image: prek8s.azurecr.io/cm:v3
+        ports:
+        - containerPort: 1800
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+        volumeMounts:
+        - mountPath: "/mnt/azure"
+          name: volume
+        env:
+        - name: zoo1
+          value: "zoo1"
+        - name: zoo2
+          value: "zoo1"
+        - name: zoo3
+          value: "zoo1"
+        - name: phpapi
+          value: "phpapi"
+        - name: redisdb
+          value: "10.0.0.200"
+        - name: mongodb
+          value: "10.0.0.200"
+        - name: mysqldb
+          value: "chonggou-mysql.mysql.database.azure.com"
+        - name: elk01
+          value: "10.0.0.29"
+        - name: elk02
+          value: "10.0.0.30"
+        - name: elk03
+          value: "10.0.0.31"
+      volumes:
+        - name: volume
+          persistentVolumeClaim:
+            claimName: azurefile
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cm
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 1800
+  selector:
+    app: cm
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: login
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: login
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5 
+  template:
+    metadata:
+      labels:
+        app: login
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      imagePullSecrets:
+      - name: prek8s
+      containers:
+      - name: login
+        image: prek8s.azurecr.io/login:v3
+        ports:
+        - containerPort: 3200
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+        volumeMounts:
+        - mountPath: "/mnt/azure"
+          name: volume
+        env:
+        - name: zoo1
+          value: "zoo1"
+        - name: zoo2
+          value: "zoo1"
+        - name: zoo3
+          value: "zoo1"
+        - name: phpapi
+          value: "phpapi"
+        - name: redisdb
+          value: "10.0.0.200"
+        - name: mongodb
+          value: "10.0.0.200"
+        - name: mysqldb
+          value: "chonggou-mysql.mysql.database.azure.com"
+        - name: elk01
+          value: "10.0.0.29"
+        - name: elk02
+          value: "10.0.0.30"
+        - name: elk03
+          value: "10.0.0.31"
+      volumes:
+        - name: volume
+          persistentVolumeClaim:
+            claimName: azurefile
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: login
+spec:
+  ports:
+  - port: 3200
+  selector:
+    app: login
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: msg
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: msg
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5 
+  template:
+    metadata:
+      labels:
+        app: msg
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      imagePullSecrets:
+      - name: prek8s
+      containers:
+      - name: msg
+        image: prek8s.azurecr.io/msg:v3
+        ports:
+        - containerPort: 1900
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+        volumeMounts:
+        - mountPath: "/mnt/azure"
+          name: volume
+        env:
+        - name: zoo1
+          value: "zoo1"
+        - name: zoo2
+          value: "zoo1"
+        - name: zoo3
+          value: "zoo1"
+        - name: phpapi
+          value: "phpapi"
+        - name: redisdb
+          value: "10.0.0.200"
+        - name: mongodb
+          value: "10.0.0.200"
+        - name: mysqldb
+          value: "chonggou-mysql.mysql.database.azure.com"
+        - name: elk01
+          value: "10.0.0.29"
+        - name: elk02
+          value: "10.0.0.30"
+        - name: elk03
+          value: "10.0.0.31"
+      volumes:
+        - name: volume
+          persistentVolumeClaim:
+            claimName: azurefile
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: msg
+spec:
+  ports:
+  - port: 1900
+  selector:
+    app: msg
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: channel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: channel
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5 
+  template:
+    metadata:
+      labels:
+        app: channel
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      imagePullSecrets:
+      - name: prek8s
+      containers:
+      - name: channel
+        image: prek8s.azurecr.io/channel:v3
+        ports:
+        - containerPort: 2500
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+        volumeMounts:
+        - mountPath: "/mnt/azure"
+          name: volume
+        env:
+        - name: zoo1
+          value: "zoo1"
+        - name: zoo2
+          value: "zoo1"
+        - name: zoo3
+          value: "zoo1"
+        - name: phpapi
+          value: "phpapi"
+        - name: redisdb
+          value: "10.0.0.200"
+        - name: mongodb
+          value: "10.0.0.200"
+        - name: mysqldb
+          value: "chonggou-mysql.mysql.database.azure.com"
+        - name: elk01
+          value: "10.0.0.29"
+        - name: elk02
+          value: "10.0.0.30"
+        - name: elk03
+          value: "10.0.0.31"
+      volumes:
+        - name: volume
+          persistentVolumeClaim:
+            claimName: azurefile
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: channel
+spec:
+  ports:
+  - port: 2500
+  selector:
+    app: channel
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: channel-pull
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: channel-pull
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5 
+  template:
+    metadata:
+      labels:
+        app: channel-pull
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      imagePullSecrets:
+      - name: prek8s
+      containers:
+      - name: channel-pull
+        image: prek8s.azurecr.io/channel-pull:v3
+        ports:
+        - name: channelpull3800
+          containerPort: 3800
+        - name: channelpull3900
+          containerPort: 3900
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+        volumeMounts:
+        - mountPath: "/mnt/azure"
+          name: volume
+        env:
+        - name: zoo1
+          value: "zoo1"
+        - name: zoo2
+          value: "zoo1"
+        - name: zoo3
+          value: "zoo1"
+        - name: phpapi
+          value: "phpapi"
+        - name: redisdb
+          value: "10.0.0.200"
+        - name: mongodb
+          value: "10.0.0.200"
+        - name: mysqldb
+          value: "chonggou-mysql.mysql.database.azure.com"
+        - name: elk01
+          value: "10.0.0.29"
+        - name: elk02
+          value: "10.0.0.30"
+        - name: elk03
+          value: "10.0.0.31"
+      volumes:
+        - name: volume
+          persistentVolumeClaim:
+            claimName: azurefile
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: channel-pull
+spec:
+  type: LoadBalancer
+  ports:
+  - name: channelpull3800
+    port: 3800
+  - name: channelpull3900
+    port: 3900
+  selector:
+    app: channel-pull
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notify
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notify
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5 
+  template:
+    metadata:
+      labels:
+        app: notify
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      imagePullSecrets:
+      - name: prek8s
+      containers:
+      - name: notify
+        image: prek8s.azurecr.io/notify:v3
+        ports:
+        - name: notify-3300
+          containerPort: 3300
+        - name: notify-3400
+          containerPort: 3400
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+        volumeMounts:
+        - mountPath: "/mnt/azure"
+          name: volume
+        env:
+        - name: zoo1
+          value: "zoo1"
+        - name: zoo2
+          value: "zoo1"
+        - name: zoo3
+          value: "zoo1"
+        - name: phpapi
+          value: "phpapi"
+        - name: redisdb
+          value: "10.0.0.200"
+        - name: mongodb
+          value: "10.0.0.200"
+        - name: mysqldb
+          value: "chonggou-mysql.mysql.database.azure.com"
+        - name: elk01
+          value: "10.0.0.29"
+        - name: elk02
+          value: "10.0.0.30"
+        - name: elk03
+          value: "10.0.0.31"
+      volumes:
+        - name: volume
+          persistentVolumeClaim:
+            claimName: azurefile
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notify
+spec:
+  ports:
+  - name: notify-3300
+    port: 3300
+  - name: notify-3400
+    port: 3400
+  selector:
+    app: notify
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ipush
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ipush
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5 
+  template:
+    metadata:
+      labels:
+        app: ipush
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      imagePullSecrets:
+      - name: prek8s
+      containers:
+      - name: ipush
+        image: prek8s.azurecr.io/ipush:v3
+        ports:
+        - containerPort: 2100
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+        volumeMounts:
+        - mountPath: "/mnt/azure"
+          name: volume
+        env:
+        - name: zoo1
+          value: "zoo1"
+        - name: zoo2
+          value: "zoo1"
+        - name: zoo3
+          value: "zoo1"
+        - name: phpapi
+          value: "phpapi"
+        - name: redisdb
+          value: "10.0.0.200"
+        - name: mongodb
+          value: "10.0.0.200"
+        - name: mysqldb
+          value: "chonggou-mysql.mysql.database.azure.com"
+        - name: elk01
+          value: "10.0.0.29"
+        - name: elk02
+          value: "10.0.0.30"
+        - name: elk03
+          value: "10.0.0.31"
+      volumes:
+        - name: volume
+          persistentVolumeClaim:
+            claimName: azurefile
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ipush
+spec:
+  ports:
+  - port: 2100
+  selector:
+    app: ipush
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apush
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apush
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5 
+  template:
+    metadata:
+      labels:
+        app: apush
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      imagePullSecrets:
+      - name: prek8s
+      containers:
+      - name: apush
+        image: prek8s.azurecr.io/apush:v3
+        ports:
+        - containerPort: 2200
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+        volumeMounts:
+        - mountPath: "/mnt/azure"
+          name: volume
+        env:
+        - name: zoo1
+          value: "zoo1"
+        - name: zoo2
+          value: "zoo1"
+        - name: zoo3
+          value: "zoo1"
+        - name: phpapi
+          value: "phpapi"
+        - name: redisdb
+          value: "10.0.0.200"
+        - name: mongodb
+          value: "10.0.0.200"
+        - name: mysqldb
+          value: "chonggou-mysql.mysql.database.azure.com"
+        - name: elk01
+          value: "10.0.0.29"
+        - name: elk02
+          value: "10.0.0.30"
+        - name: elk03
+          value: "10.0.0.31"
+      volumes:
+        - name: volume
+          persistentVolumeClaim:
+            claimName: azurefile
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apush
+spec:
+  ports:
+  - port: 2200
+  selector:
+    app: apush

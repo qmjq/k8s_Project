@@ -1,0 +1,149 @@
+pipeline {
+    	//agent any
+        agent {
+	        label 'jenkins02'
+	}
+	options {
+		timeout (30)
+		ansiColor('xterm')	//启用颜色显示，需安装插件，方法 https://github.com/jenkinsci/ansicolor-plugin
+	}
+	environment {
+		POSITION = "front"	//front表示前端代码，dotnet表示后端代码
+		APP_CONFIG = "config/dotnet_front_config"	//GIT 小包系统 前端配置文件 和 后端配置文件
+		CREDENTIALS_ID = "33892de7-5621-4dcd-9e89-4f69ab40d516"	//jekins 保存的凭据“id”
+		GIT_URL = "http://gitea:3000"
+		HARBOR = "harbor:80"
+		BUILD_TIME = sh(script: "echo `date '+%F-%H-%M'`", returnStdout: true).trim() 
+		NPM_MIRRORS="https://registry.npm.taobao.org"
+
+	}
+	//parameters {
+		//string(name:'GIT_URL', defaultValue:'http://gitea:3000/front' )
+	//}
+
+	stages {
+		stage('git clone') {
+			steps { 
+				script {
+					sh '$JENKINS_HOME/message.sh begin $JOB_NAME $BUILD_NUMBER $JOB_URL '
+					sh 'echo -e "\033[40;32m stage: dotnet restore and build \033[0m"'
+					if (IMPLEMENT == 'deploy') {
+					git branch: '$BRANCH', credentialsId: '33892de7-5621-4dcd-9e89-4f69ab40d516', url: 'http://gitea:3000/front/$JOB_NAME.git'
+					//git branch: '$BRANCH', credentialsId: '$CREDENTIALS_ID', url: '$GIT_URL/$POSITION/$JOB_BASE_NAME'
+					}
+					if (IMPLEMENT == 'rollback' && ROLLBACK_OPTION == 'git_rollback' ) {
+					git branch: '$BRANCH', credentialsId: '33892de7-5621-4dcd-9e89-4f69ab40d516', url: 'http://gitea:3000/front/$JOB_NAME.git'
+					git checkout -f $TAG
+					}
+				}
+			}
+			post {
+				failure {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+				}
+				regression {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+				}
+			}
+		}
+		stage('pnpm install and build') {
+			steps {
+				script {
+					if (ROLLBACK_OPTION != 'k8s_rollback') {
+					sh 'echo -e "\033[40;32m stage: pnpm install and build \033[0m"'
+					sh  '''
+						source /etc/profile && cd $WORKSPACE  
+						npm config set $NPM_MIRRORS && pnpm config set $NPM_MIRRORS && yarn config set $NPM_MIRRORS  && pnpm install --no-frozen-lockfile && pnpm run build:$BRANCH 
+						mkdir -p $(dirname $WORKSPACE)/$POSITION/$JOB_NAME && rm -rf $(dirname $WORKSPACE)/$POSITION/$JOB_NAME/dist && mv dist $(dirname $WORKSPACE)/$POSITION/$JOB_NAME ||exit 1
+					'''
+					}
+				}
+			}
+			post {
+				failure {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+				}
+				regression {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+				}
+			}
+		}
+		stage('copy config') {
+			steps {
+				script {
+					if (ROLLBACK_OPTION != 'k8s_rollback') {
+					sh 'echo -e "\033[40;32m stage: copy config \033[0m"'
+					sh  '''
+						cd $(dirname $WORKSPACE)/$POSITION/$JOB_NAME || exit 1
+						wget -N $GIT_URL/$APP_CONFIG/raw/branch/master/$POSITION/dockerfile $GIT_URL/$APP_CONFIG/raw/branch/master/$POSITION/$JOB_NAME.proxy.conf 
+					'''
+					}
+				}
+			}
+			post {
+				failure {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+				}
+				regression {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+				}
+			}
+		}															                
+		stage('docker build and push to registry ') {
+			steps {
+				script {
+					if (ROLLBACK_OPTION != 'k8s_rollback') {
+					sh 'echo -e "\033[40;32m stage:docker build and push to registry \033[0m"'
+					sh  '''
+						cd $(dirname $WORKSPACE)/$POSITION/$JOB_NAME && IMAGENAME=$(echo "$HARBOR/$POSITION/"${JOB_NAME,,}) && docker build -t $IMAGENAME . 
+						docker push $IMAGENAME && docker tag $IMAGENAME $IMAGENAME:$BUILD_TIME && docker push $IMAGENAME:$BUILD_TIME || exit 1
+					'''
+					}
+				}
+			}
+			post {
+				failure {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+				}
+				regression {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+				}
+			}
+
+		}
+       		stage('update kubernetes ') {
+                	steps {
+				script {
+					if (ROLLBACK_OPTION != 'k8s_rollback') {
+					sh 'echo -e "\033[40;32m stage: update kubernetes \033[0m"'
+					sh  '''
+						IMAGENAME=$(echo "$HARBOR/$POSITION/"${JOB_NAME,,}) &&  DEPLOYNAME=$(echo ${JOB_NAME,,}) 
+						kubectl -n sjzy set image deploy/${DEPLOYNAME//_/-} ${DEPLOYNAME//_/-}=$IMAGENAME:$BUILD_TIME && sleep 15 || exit 1
+						echo -e "update kubernetes"  && kubectl get pods -n sjzy |grep -Ei ${JOB_NAME//_/-} 					
+					'''
+					}
+					if (IMPLEMENT == 'rollback' && ROLLBACK_OPTION == 'k8s_rollback') {
+					sh 'echo -e "\033[40;32m stage: update kubernetes \033[0m"'
+					sh  '''
+						IMAGENAME=$(echo "$HARBOR/$POSITION/"${JOB_NAME,,}) &&  DEPLOYNAME=$(echo ${JOB_NAME,,}) 
+						kubectl -n sjzy set image deploy/${DEPLOYNAME//_/-} ${DEPLOYNAME//_/-}=$IMAGENAME:$IMAGE_TAG && sleep 15 || exit 1
+						echo -e "update kubernetes"  && kubectl get pods -n sjzy |grep -Ei ${JOB_NAME//_/-} 					
+					'''
+					}
+				}
+			}
+			post {
+				success {
+					sh '$JENKINS_HOME/message.sh SUCCESS $JOB_NAME $BUILD_NUMBER $JOB_URL '
+				}
+				failure {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+				}
+				regression {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+				}
+			}
+		}
+	}
+	//sh  'echo -e "$JOB_NAME  $JOB_BASE_NAME  $WORKSPACE $JENKINS_HOME  $NODE_NAME  $BRANCH_NAME"'
+}

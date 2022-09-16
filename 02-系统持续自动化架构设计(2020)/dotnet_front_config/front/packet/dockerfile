@@ -1,0 +1,16 @@
+FROM centos:centos7
+MAINTAINER QMJQ 20220801 jingge
+RUN mkdir -p /app/soft/ 
+WORKDIR /app/soft
+RUN  ln -sf /usr/share/zoneinfo/Asia/Chongqing /etc/localtime && yum -y install libnl-devel libnl3-devel libnfnetlink-devel pcre-devel openssl-devel gd-devel  make gcc && yum clean all && rm -rf /var/cache/yum/*
+ADD  https://nginx.org/download/nginx-1.22.0.tar.gz .
+ADD  https://github.com/FRiCKLE/ngx_cache_purge/archive/refs/tags/2.3.tar.gz .
+#COPY  nginx-1.22.0.tar.gz .
+RUN  useradd -M -s /sbin/nologin nginx && mkdir nginx && tar -zxvf nginx-1.22.0.tar.gz && tar -zxvf 2.3.tar.gz && mv ngx_cache_purge-2.3 nginx-1.22.0/ngx_cache_purge && cd nginx-1.22.0  && ./configure --prefix=/app/soft/nginx --user=nginx --group=nginx --add-module=ngx_cache_purge --with-pcre --with-compat --with-stream --with-threads --with-file-aio --with-stream_ssl_module --with-stream_ssl_preread_module --with-stream_realip_module --with-http_ssl_module --with-http_realip_module --with-http_v2_module --with-http_image_filter_module --with-http_sub_module --with-http_dav_module --with-http_stub_status_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_addition_module --with-http_auth_request_module --with-http_secure_link_module --with-http_flv_module --with-http_mp4_module --with-ld-opt=-Wl,-E --with-cc-opt=-Wno-error && make && make install && cd .. &&  chown -R nginx:nginx nginx* 
+RUN  rm nginx/conf/nginx.conf -rf && mkdir nginx/conf/vhost 
+COPY nginx.conf nginx/conf/ 
+COPY vhost/proxy.conf nginx/conf/vhost/
+#COPY www.conf 404.conf  nginx/conf/vhost/
+EXPOSE 80
+EXPOSE 443
+CMD ["/app/soft/nginx/sbin/nginx", "-g", "daemon off;"]

@@ -1,0 +1,15 @@
+FROM  nginx
+MAINTAINER QMJQ 20190926 http://qmjq.github.io
+
+RUN mkdir -p /data/cm/server  && mkdir -p /data/cm/lib
+RUN rm -rf /etc/nginx/conf.d ;ln -s -f /mnt/azure/nginx-channel-pull/cert  /etc/nginx/cert && ln -s -f /mnt/azure/nginx-channel-pull/conf.d  /etc/nginx/conf.d && ln -s -f /mnt/azure/nginx-channel-pull/nginx.conf  /etc/nginx/nginx.conf
+
+WORKDIR /etc/nginx
+
+
+EXPOSE 80
+EXPOSE 443
+EXPOSE 3799
+
+#ENTRYPOINT ["nginx", "-g", "daemon off;"]
+CMD ["nginx", "-g", "daemon off;"]

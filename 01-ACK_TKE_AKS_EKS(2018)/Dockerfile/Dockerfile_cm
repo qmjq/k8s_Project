@@ -1,0 +1,16 @@
+FROM  centos
+MAINTAINER QMJQ 20190926 http://qmjq.github.io
+
+RUN mkdir -p /data/cm/server  && mkdir -p /data/cm/lib
+RUN rm -rf /etc/localtime ;ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+COPY c_k8s/cm/server /data/cm/server
+COPY c_k8s/lib /data/cm/lib
+
+WORKDIR /data/cm/server
+
+#VOLUME  /root/cm 
+
+EXPOSE 1800
+
+#ENTRYPOINT ["./cm_server",">","/dev/null",">&1","&"]
+CMD ["./cm_server",">","/dev/null",">&1","&"]

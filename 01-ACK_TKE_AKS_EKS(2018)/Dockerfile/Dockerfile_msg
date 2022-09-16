@@ -1,0 +1,16 @@
+FROM  centos
+MAINTAINER QMJQ 20190926 http://qmjq.github.io
+
+RUN mkdir -p /data/msg/server  && mkdir -p /data/msg/lib
+RUN rm -rf /etc/localtime ;ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+COPY c_k8s/msg/server /data/msg/server
+COPY c_k8s/lib /data/msg/lib
+
+WORKDIR /data/msg/server
+
+#VOLUME  /root/msg 
+
+EXPOSE 1900
+
+#ENTRYPOINT ["./msg_server",">","/dev/null",">&1","&"]
+CMD ["./msg_server",">","/dev/null",">&1","&"]

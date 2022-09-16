@@ -1,0 +1,38 @@
+pipeline {
+    //agent any
+        agent {
+	        label 'jenkins03'
+	}
+	stages {
+		stage('git clone') {
+			steps {
+				//git credentialsId: 'de61bbb3-12e3-4f5a-8ce7-7ec81184d6e0', url: 'http://gitea:3000/BACK/$JOB_NAME.git'
+				git branch: 'master', credentialsId: 'de61bbb3-12e3-4f5a-8ce7-7ec81184d6e0', url: 'http://gitea:3000/Front/$JOB_NAME.git'
+				//git branch: '$BRANCH', credentialsId: 'de61bbb3-12e3-4f5a-8ce7-7ec81184d6e0', url: 'http://gitea:3000/BACK/$JOB_NAME.git'
+			}
+		}
+		stage('pnpm install and build') {
+			steps {
+				sh  'NODE_14_17_0=/data/node-v14.17.0 && PATH=$NODE_14_17_0/bin:$PATH && cd $WORKSPACE && rm -rf dist && yarn install && yarn run build:serve || exit 1 && mkdir -p $(dirname $WORKSPACE)/front/$JOB_NAME && rm -rf $(dirname $WORKSPACE)/front/$JOB_NAME/dist && mv dist $(dirname $WORKSPACE)/front/$JOB_NAME'
+				//sh  'source /etc/profile && cd $WORKSPACE && pnpm install || exit 1 && pnpm run build  || exit 1 && mkdir -p $(dirname $WORKSPACE)/front/$JOB_NAME && rm -rf $(dirname $WORKSPACE)/front/$JOB_NAME/dist && mv dist $(dirname $WORKSPACE)/front/$JOB_NAME'
+			}
+		}
+		stage('copy config') {
+			steps {
+				sh  'cd $(dirname $WORKSPACE)/front/$JOB_NAME && wget -N http://gitea:3000/config/config/raw/branch/master/front/dockerfile http://gitea:3000/config/config/raw/branch/master/front/$JOB_NAME.proxy.conf'
+			}
+		}															                
+		stage('docker build and push to registry ') {
+			steps {
+				sh  'echo -e "docker build and push to registry"' 
+				sh  'cd $(dirname $WORKSPACE)/front/$JOB_NAME && IMAGENAME=$(echo "harbor:8080/front/"${JOB_NAME,,}) && docker build -t $IMAGENAME . && DATE=$(date +%F-%H-%M) && docker push $IMAGENAME && docker tag $IMAGENAME $IMAGENAME:$DATE && docker push $IMAGENAME:$DATE && DEPLOYNAME=$(echo ${JOB_NAME,,}) && kubectl set image -n sjzy deploy/${DEPLOYNAME//_/-} ${DEPLOYNAME//_/-}=$IMAGENAME:$DATE || exit 1'
+				//sh  'echo -e "$JOB_NAME  $JOB_BASE_NAME  $WORKSPACE $JENKINS_HOME  $NODE_NAME  $BRANCH_NAME"'
+			}
+		}
+       		stage('update kubernetes ') {
+                	steps {
+				sh  'echo -e "update kubernetes"  && kubectl get pods -n sjzy |grep -Ei ${JOB_NAME//_/-}' 														            
+			}
+		}
+	}
+}

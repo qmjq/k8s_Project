@@ -1,0 +1,17 @@
+FROM  centos
+MAINTAINER QMJQ 20190926 http://qmjq.github.io
+
+RUN mkdir -p /data/notify/server  && mkdir -p /data/notify/lib
+RUN rm -rf /etc/localtime ;ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+COPY c_k8s/notify/server /data/notify/server
+COPY c_k8s/lib /data/notify/lib
+
+WORKDIR /data/notify/server
+
+#VOLUME  /root/notify 
+
+EXPOSE 3300
+EXPOSE 3400
+
+#ENTRYPOINT ["./notify_server",">","/dev/null",">&1","&"]
+CMD ["./notify_server",">","/dev/null",">&1","&"]

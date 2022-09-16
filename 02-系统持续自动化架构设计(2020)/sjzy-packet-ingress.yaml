@@ -1,0 +1,97 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  #creationTimestamp: "2022-07-29T06:30:32Z"
+  #generation: 2
+  name: sjzy-front-ingress
+  namespace: sjzy
+  #resourceVersion: "648610"
+  #uid: 66f151b3-4692-47e4-beed-bdcab83511d8
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: tms.qmjq.localhost
+    http:
+      paths:
+      - backend:
+          service:
+            name: packet-bsi-pc-ui
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  - host: gtfbd.qmjq.localhost02
+    http:
+      paths:
+      - backend:
+          service:
+            name: packet-bsi-pc-ui
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  - host: u.qmjq.localhost
+    http:
+      paths:
+      - backend:
+          service:
+            name: packet-outcustome-pc-ui
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  - host: gtf.qmjq.localhost02
+    http:
+      paths:
+      - backend:
+          service:
+            name: packet-outcustome-pc-ui
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  - host: label.qmjq.localhost02
+    http:
+      paths:
+      - backend:
+          service:
+            name: packet-label
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  - host: dj.qmjq.localhost
+    http:
+      paths:
+      - backend:
+          service:
+            name: packet-shopman-web-ui
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - tms.qmjq.localhost
+    secretName: tms.qmjq.localhost
+  - hosts:
+    - gtfbd.qmjq.localhost02
+    secretName: gtfbd.qmjq.localhost02
+  - hosts:
+    - u.qmjq.localhost
+    secretName: u.qmjq.localhost
+  - hosts:
+    - gtf.qmjq.localhost02
+    secretName: gtf.qmjq.localhost02
+  - hosts:
+    - dj.qmjq.localhost
+    secretName: dj.qmjq.localhost
+  - hosts:
+    - label.qmjq.localhost02
+    secretName: label.qmjq.localhost02
+status:
+  loadBalancer:
+    ingress:
+    - ip: 192.168.56.104
+    - ip: 192.168.56.105
+    - ip: 192.168.56.106

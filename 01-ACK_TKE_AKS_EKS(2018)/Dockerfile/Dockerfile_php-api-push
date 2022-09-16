@@ -1,0 +1,18 @@
+FROM  centos
+MAINTAINER QMJQ 20190926 http://qmjq.github.io
+
+RUN mkdir -p /data/morseapp-api 
+RUN rm -rf /etc/localtime ;ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+COPY php_k8s/morseapp-api /data/morseapp-api
+RUN yum -y install libxslt libpng-devel libjpeg libXpm geoip freetype ; ln -s -f /mnt/azure/php  /data/php ;ln -s -f /mnt/azure/morseapp-api/config  /data/morseapp-api/config
+ENV PHP /data/php/bin
+ENV PATH $PATH:$PHP
+
+WORKDIR /data/morseapp-api
+
+#VOLUME  /root/cm 
+
+#EXPOSE 9559
+
+#ENTRYPOINT ["./cm_server",">","/dev/null",">&1","&"]
+CMD ["bash","./cmpush","start",">","/dev/null",">&1","&"]

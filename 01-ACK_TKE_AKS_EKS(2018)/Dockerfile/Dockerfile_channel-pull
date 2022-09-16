@@ -1,0 +1,17 @@
+FROM  centos
+MAINTAINER QMJQ 20190926 http://qmjq.github.io
+
+RUN mkdir -p /data/channel-pull/server  && mkdir -p /data/channel-pull/lib
+RUN rm -rf /etc/localtime ;ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+COPY c_k8s/channel-pull/server /data/channel-pull/server
+#COPY c_k8s/lib /data/channel-pull/lib
+
+WORKDIR /data/channel-pull/server
+
+#VOLUME  /root/channel-pull 
+
+EXPOSE 3800
+EXPOSE 3900 
+
+#ENTRYPOINT ["./channel-pull_server",">","/dev/null",">&1","&"]
+CMD ["./channel-pull_server",">","/dev/null",">&1","&"]

@@ -1,0 +1,150 @@
+##yml
+##git:https://github.com/QMJQ
+##blog:http://qmjq.github.io 
+##     http://qiaomiao.blog.51cto.com
+##date: 20190926 v1.0
+##author:QMJQ
+##description: k8s's cluster yml
+#
+ 
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phpapi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phpapi
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5 
+  template:
+    metadata:
+      labels:
+        app: phpapi
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      imagePullSecrets:
+      - name: prek8s
+      containers:
+      - name: phpapi
+        image: prek8s.azurecr.io/php-api-swoole:v3
+        ports:
+        - containerPort: 9559
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 2048Mi
+          limits:
+            cpu: 2000m
+            memory: 4096Mi
+        volumeMounts:
+        - mountPath: "/mnt/azure"
+          name: volume
+        env:
+        - name: zoo1
+          value: "zoo1"
+        - name: zoo2
+          value: "zoo1"
+        - name: zoo3
+          value: "zoo1"
+        - name: phpapi
+          value: "phpapi"
+        - name: redisdb
+          value: "10.0.0.200"
+        - name: mongodb
+          value: "10.0.0.200"
+        - name: mysqldb
+          value: "chonggou-mysql.mysql.database.azure.com"
+        - name: elk01
+          value: "10.0.0.29"
+        - name: elk02
+          value: "10.0.0.30"
+        - name: elk03
+          value: "10.0.0.31"
+      volumes:
+        - name: volume
+          persistentVolumeClaim:
+            claimName: azurefile
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phpapi
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 9559
+  selector:
+    app: phpapi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phpapipush
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phpapipush
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5 
+  template:
+    metadata:
+      labels:
+        app: phpapipush
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      imagePullSecrets:
+      - name: prek8s
+      containers:
+      - name: phpapipush
+        image: prek8s.azurecr.io/php-api-push:v3
+        ports:
+        - containerPort: 9559
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 1024Mi
+          limits:
+            cpu: 2000m
+            memory: 4096Mi
+        volumeMounts:
+        - mountPath: "/mnt/azure"
+          name: volume
+        env:
+        - name: zoo1
+          value: "zoo1"
+        - name: zoo2
+          value: "zoo1"
+        - name: zoo3
+          value: "zoo1"
+        - name: phpapi
+          value: "phpapi"
+        - name: redisdb
+          value: "10.0.0.200"
+        - name: mongodb
+          value: "10.0.0.200"
+        - name: mysqldb
+          value: "chonggou-mysql.mysql.database.azure.com"
+        - name: elk01
+          value: "10.0.0.29"
+        - name: elk02
+          value: "10.0.0.30"
+        - name: elk03
+          value: "10.0.0.31"
+      volumes:
+        - name: volume
+          persistentVolumeClaim:
+            claimName: azurefile
+

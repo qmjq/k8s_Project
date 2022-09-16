@@ -1,0 +1,171 @@
+##yml
+##git:https://github.com/QMJQ
+##blog:http://qmjq.github.io 
+##     http://qiaomiao.blog.51cto.com
+##date: 20190926 v1.0
+##author:QMJQ
+##description: k8s's cluster yml
+#
+ 
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ngx-phpswoole
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ngx-phpswoole
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5 
+  template:
+    metadata:
+      labels:
+        app: ngx-phpswoole
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      imagePullSecrets:
+      - name: prek8s
+      containers:
+      - name: ngx-phpswoole
+        image: prek8s.azurecr.io/nginx-php-swoole:v2
+        ports:
+        - containerPort: 443
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+        volumeMounts:
+        - mountPath: "/mnt/azure"
+          name: volume
+        env:
+        - name: zoo1
+          value: "zoo1"
+        - name: zoo2
+          value: "zoo1"
+        - name: zoo3
+          value: "zoo1"
+        - name: phpapi
+          value: "phpapi"
+        - name: redisdb
+          value: "10.0.0.200"
+        - name: mongodb
+          value: "10.0.0.200"
+        - name: mysqldb
+          value: "chonggou-mysql.mysql.database.azure.com"
+        - name: elk01
+          value: "10.0.0.29"
+        - name: elk02
+          value: "10.0.0.30"
+        - name: elk03
+          value: "10.0.0.31"
+      volumes:
+        - name: volume
+          persistentVolumeClaim:
+            claimName: azurefile
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ngx-phpswoole
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 443
+  selector:
+    app: ngx-phpswoole
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ngx-channelpull
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ngx-channelpull
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5 
+  template:
+    metadata:
+      labels:
+        app: ngx-channelpull
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      imagePullSecrets:
+      - name: prek8s
+      containers:
+      - name: ngx-channelpull
+        image: prek8s.azurecr.io/nginx-channel-pull:v2
+        ports:
+          - name: ngx-pull-80
+            containerPort: 80
+          - name: ngx-pull-443
+            containerPort: 443
+          - name: ngx-pull-3799
+            containerPort: 3799
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+        volumeMounts:
+        - mountPath: "/mnt/azure"
+          name: volume
+        env:
+        - name: zoo1
+          value: "zoo1"
+        - name: zoo2
+          value: "zoo1"
+        - name: zoo3
+          value: "zoo1"
+        - name: phpapi
+          value: "phpapi"
+        - name: redisdb
+          value: "10.0.0.200"
+        - name: mongodb
+          value: "10.0.0.200"
+        - name: mysqldb
+          value: "chonggou-mysql.mysql.database.azure.com"
+        - name: elk01
+          value: "10.0.0.29"
+        - name: elk02
+          value: "10.0.0.30"
+        - name: elk03
+          value: "10.0.0.31"
+      volumes:
+        - name: volume
+          persistentVolumeClaim:
+            claimName: azurefile
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ngx-channelpull
+spec:
+  type: LoadBalancer
+  ports:
+  - name: ngx-pull-80
+    port: 80
+  - name: ngx-pull-443
+    port: 443
+  - name: ngx-pull-3799
+    port: 3799
+  selector:
+    app: ngx-channelpull
+

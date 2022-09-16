@@ -1,0 +1,168 @@
+pipeline {
+	//agent any
+        agent {
+		//label 'jenkins01 || jenkins02'
+		label 'jenkins'
+	}
+	options {
+		timeout (30)
+		ansiColor('xterm')	//启用颜色显示，需安装插件，方法 https://github.com/jenkinsci/ansicolor-plugin
+	}
+	environment {
+		POSITION = "dotnet"	//front表示前端代码，dotnet表示后端代码
+		APP_CONFIG = "config/dotnet_front_config"	//GIT 小包系统 前端配置文件 和 后端配置文件
+		CREDENTIALS_ID = "33892de7-5621-4dcd-9e89-4f69ab40d516"	//jekins 保存的凭据“id”
+		GIT_URL = "http://gitea:3000"
+		HARBOR = "harbor:80"
+		BUILD_TIME = sh(script: "echo `date '+%F-%H-%M'`", returnStdout: true).trim() 
+		DOTNET_MIRRORS01="http://192.168.80.56:5555/v3/index.json"
+		DOTNET_MIRRORS02="https://api.nuget.org/v3/index.json"
+		DOTNET_MIRRORS03="https://nuget.cnblogs.com/v3/index.json"
+
+	}
+	//parameters {
+		//string(name:'GIT_URL', defaultValue:'http://gitea:3000/front' )
+	//}
+
+	stages {
+		stage('git clone') {
+			steps {
+				script {
+					sh '$JENKINS_HOME/message.sh begin $JOB_NAME $BUILD_NUMBER $JOB_URL '
+					sh 'echo -e "\033[40;32m stage: git clone \033[0m"'
+					if (IMPLEMENT == 'deploy') {
+					git branch: '$BRANCH', credentialsId: '33892de7-5621-4dcd-9e89-4f69ab40d516', url: 'http://gitea:3000/dotnet/$JOB_NAME.git'
+					//git branch: '$BRANCH', credentialsId: '$CREDENTIALS_ID', url: '$GIT_URL/$POSITION/$JOB_BASE_NAME'
+					}
+					if (IMPLEMENT == 'rollback' && ROLLBACK_OPTION == 'git_rollback' ) {
+					git branch: '$BRANCH', credentialsId: '33892de7-5621-4dcd-9e89-4f69ab40d516', url: 'http://gitea:3000/dotnet/$JOB_NAME.git'
+					git checkout -f $TAG
+					}
+				}
+			}
+			post {
+				failure {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+					}
+				regression {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+					}
+			}
+		}
+	    	stage('dotnet restore and build') {
+			steps { 
+				script {
+					if (ROLLBACK_OPTION != 'k8s_rollback') {
+					sh 'echo -e "\033[40;32m stage: dotnet restore and build \033[0m"'
+					sh  '''
+						cd $WORKSPACE && SLN=$(ls|grep -i *.sln|head -n 1 || exit 1 ) && dotnet restore $SLN -s $DOTNET_MIRRORS01 -s $DOTNET_MIRRORS02 -s $DOTNET_MIRRORS03 || exit 1; 
+						dotnet build $SLN || exit 1 
+					'''
+	        			}
+				}
+			}
+			post {
+				failure {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+					}
+				regression {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+					}
+			}
+	   	}
+		stage('dotnet publish ') {
+			steps {
+				script {
+					if (ROLLBACK_OPTION != 'k8s_rollback') {
+					sh 'echo -e "\033[40;32m stage: dotnet publish \033[0m"'
+					sh  'cd $WORKSPACE && SLN=$(ls|grep -i *.sln|head -n 1 || exit 1 ) && dotnet publish $SLN  -p:PublishDir=$(dirname $WORKSPACE)/$POSITION/$JOB_NAME || exit 1 '
+	        			}
+				}
+			}
+			post {
+				failure {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+					}
+				regression {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+					}
+			}
+		}
+		stage('copy config ') {
+               		steps {
+				script {
+					if (ROLLBACK_OPTION != 'k8s_rollback') {
+					sh 'echo -e "\033[40;32m stage: copy config \033[0m"'
+		         		sh  '''
+						cd $WORKSPACE && wget $GIT_URL/$APP_CONFIG/raw/branch/master/$POSITION/appsettings.json.$JOB_NAME  
+						/bin/mv -f appsettings.json.$JOB_NAME $(dirname $WORKSPACE)/$POSITION/$JOB_NAME/appsettings.json || exit 1
+					'''
+	        			}
+				}
+			}
+			post {
+				failure {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+					}
+				regression {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+					}
+			}
+		}
+		stage('docker build and push to registry ') {
+           		steps {
+				script {
+					if (ROLLBACK_OPTION != 'k8s_rollback') {
+					sh  'echo -e "\033[40;32m stage: docker build and push to registry \033[0m"'
+			  		sh  '''
+						cd $(dirname $WORKSPACE)/$POSITION/$JOB_NAME && IMAGENAME=$(echo "$HARBOR/$POSITION/"${JOB_NAME,,}) && docker build -t $IMAGENAME . 
+						docker push $IMAGENAME && docker tag $IMAGENAME $IMAGENAME:$BUILD_TIME && docker push $IMAGENAME:$BUILD_TIME || exit 1
+					'''
+	        			}
+				}
+			}
+			post {
+				failure {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+					}
+				regression {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+					}
+			}
+		}
+            	stage('update kubernetes ') {
+		      	steps {
+				script {
+					if (ROLLBACK_OPTION != 'k8s_rollback') {
+					sh 'echo -e "\033[40;32m stage: update kubernetes \033[0m"'
+					sh '''
+						IMAGENAME=$(echo "$HARBOR/$POSITION/"${JOB_NAME,,}) && DEPLOYNAME=$(echo ${JOB_NAME,,}) 
+						kubectl set image -n sjzy deploy/${DEPLOYNAME//./-} ${DEPLOYNAME//./-}=$IMAGENAME:$BUILD_TIME || exit 1 
+						echo -e "update kubernetes" && kubectl get pods -n sjzy |grep -Ei ${JOB_NAME//./-}
+					'''
+	        			}
+					if (IMPLEMENT == 'rollback' && ROLLBACK_OPTION == 'k8s_rollback') {
+					sh 'echo -e "\033[40;32m stage: update kubernetes , k8s rollback $IMAGE_TAG  \033[0m"'
+					sh '''
+						IMAGENAME=$(echo "$HARBOR/$POSITION/"${JOB_NAME,,}) && DEPLOYNAME=$(echo ${JOB_NAME,,}) 
+						kubectl set image -n sjzy deploy/${DEPLOYNAME//./-} ${DEPLOYNAME//./-}=$IMAGENAME:$IMAGE_TAG && sleep 15 || exit 1 
+						echo -e "update kubernetes" && kubectl get pods -n sjzy |grep -Ei ${JOB_NAME//./-}
+					'''
+	        			}
+				}
+			}
+			post {
+				success {
+					sh '$JENKINS_HOME/message.sh SUCCESS $JOB_NAME $BUILD_NUMBER $JOB_URL '
+					}
+				failure {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+					}
+				regression {
+					sh '$JENKINS_HOME/message.sh FAILED $JOB_NAME $BUILD_NUMBER $JOB_URL '
+					}
+			}
+		}
+		//sh  'echo -e "$JOB_NAME  $JOB_BASE_NAME  $WORKSPACE $JENKINS_HOME  $NODE_NAME  $BRANCH_NAME"'
+	}
+}

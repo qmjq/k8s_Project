@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zookeeper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zookeeper
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      containers:
+      - name: zookeeper
+        image: zookeeper
+        ports:
+        - containerPort: 2181
+          name: zookeeper
+        resources:
+          requests:
+            cpu: 500m
+          limits:
+            cpu: 1000m
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zoo1
+spec:
+  ports:
+  - port: 2181
+  selector:
+    app: zookeeper
+  
