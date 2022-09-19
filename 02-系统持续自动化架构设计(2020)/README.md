@@ -22,6 +22,7 @@
 			3、jenkins pipeline任务pull gitlab仓库相应项目名代码, pull gitlab仓库config库的配置文件。
 			4、jenkins pipeline任务执行相应构建（如:编译前后端代码、上传镜像到harbor）。
 			5、jenkins pipeline任务执行kubectl发布相应项目。
+			6、调用 企业微信或飞书 的webhook发信息提示。
 	
 	       实现功能：测试和 UAT 环境架构全部实现
 			1. 支持存储编排
